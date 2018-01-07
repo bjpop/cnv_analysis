@@ -224,7 +224,7 @@ def intersect_cnvs(merged_cnvs, all_cnvs):
 
 def write_duplicates(fieldnames, duplicates, input_filename):
     input_path = Path(input_filename)
-    output_filepath = input_path.with_suffix(".dups.csv")
+    output_filepath = input_path.with_suffix(".dups.tsv")
     with output_filepath.open("w") as output_file:
         writer = csv.DictWriter(output_file, fieldnames, delimiter="\t")
         writer.writeheader()
