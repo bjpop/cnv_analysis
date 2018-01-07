@@ -22,7 +22,7 @@ from itertools import combinations
 
 EXIT_FILE_IO_ERROR = 1
 EXIT_COMMAND_LINE_ERROR = 2
-PROGRAM_NAME = "collapse_cnvs"
+PROGRAM_NAME = "merge_cnvs"
 DEFAULT_OVERLAP = 0.7
 
 

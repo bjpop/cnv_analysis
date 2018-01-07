@@ -13,11 +13,12 @@ setup(
     packages=['cnv_analysis'],
     package_dir={'cnv_analysis': 'src'},
     entry_points={
-        'console_scripts': ['collapse_cnvs = cnv_analysis.collapse_cnvs:main']
+        'console_scripts': ['merge_cnvs = cnv_analysis.merge_cnvs:main',
+            'case_control = cnv_analysis.case_control:main']
     },
     url='https://github.com/bjpop/cnv_analysis',
     license='LICENSE',
     description=('CNV analysis tools'),
     long_description=(LONG_DESCRIPTION),
-    install_requires=["networkx"],
+    install_requires=["networkx", "bx-python", "scipy"],
 )
