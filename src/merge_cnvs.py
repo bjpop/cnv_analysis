@@ -1,7 +1,7 @@
 '''
 Module      : Main
 Description : The main entry point for the program.
-Copyright   : (c) Bernie Pope, 2016
+Copyright   : (c) Bernie Pope, 2018
 License     : MIT
 Maintainer  : bjpope@unimelb.edu.au
 Portability : POSIX
