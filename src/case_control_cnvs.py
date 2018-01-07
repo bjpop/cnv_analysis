@@ -40,7 +40,7 @@ from scipy.stats import chi2_contingency
 
 EXIT_FILE_IO_ERROR = 1
 EXIT_COMMAND_LINE_ERROR = 2
-PROGRAM_NAME = "case_control"
+PROGRAM_NAME = "case_control_cnvs"
 
 
 try:
