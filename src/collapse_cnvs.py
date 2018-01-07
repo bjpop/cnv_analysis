@@ -168,7 +168,6 @@ def group_cnvs(family_cnvs, min_overlap):
                     yield((family, merged, component))
 
 
-#OUTPUT_HEADER = 'master_sample_sheet_FAMILY_ID,chr,coord_start,coord_end,copy_number,gene_symbols_in_cnv'
 OUTPUT_HEADER = "\t".join(['chr', 'start', 'end', 'family', 'copy_number', 'genes'])
 
                 
@@ -176,7 +175,6 @@ def group_and_print(family_cnvs, min_overlap):
     print(OUTPUT_HEADER)
     for family_id, cnv, component in group_cnvs(family_cnvs, min_overlap):
         gene_string = ';'.join(cnv.genes)
-        #print(",".join([family_id, cnv.chrom, str(cnv.start), str(cnv.end), str(cnv.copynumber), gene_string]))
         print("\t".join([cnv.chrom, str(cnv.start), str(cnv.end), family_id, str(cnv.copynumber), gene_string]))
 
 
