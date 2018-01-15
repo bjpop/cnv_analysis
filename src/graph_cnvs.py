@@ -22,6 +22,7 @@ from itertools import combinations
 from bx.intervals.intersection import Interval, IntervalTree
 import json
 import os
+import networkx as nx
 
 
 EXIT_FILE_IO_ERROR = 1
@@ -99,7 +100,7 @@ def init_logging(log_filename):
         logging.info('command line: %s', ' '.join(sys.argv))
 
 
-CNV = namedtuple('CNV', ['chrom', 'start', 'end', 'copynumber', 'chi2', 'p', 'genes'])
+CNV = namedtuple('CNV', ['chrom', 'start', 'end', 'copynumber', 'chi2', 'p', 'penncnv_conf', 'genes'])
 
 
 def read_all_cnvs(all_cnvs_filename):
@@ -124,30 +125,30 @@ def write_family_results(outdir, family, cnvs):
     cnv_id = 0
     unique_samples = set()
     unique_cnvs = {}
-    nodes = []
-    edges = []
+    unique_edges = set()
+    graph = nx.Graph() 
     for row in cnvs:
         this_samples = [make_sample(sample_info) for sample_info in row['samples'].split('|')]
         for s in this_samples:
             unique_samples.add(s)
         this_genes = tuple(row['genes'].split(';'))
-        this_cnv = CNV(row['chr'], row['start'], row['end'], row['copynumber'], row['chi2'], row['p-value'], this_genes)
+        this_cnv = CNV(row['chr'], row['start'], row['end'], row['copynumber'], row['chi2'], row['p-value'], row['penncnv_conf'], this_genes)
         if this_cnv not in unique_cnvs:
             unique_cnvs[this_cnv] = cnv_id
             cnv_id += 1
         for sample in this_samples:
-            edges.append({'data': {'source': sample.id, 'target': str(unique_cnvs[this_cnv])}})
+            unique_edges.add((sample.id, str(unique_cnvs[this_cnv])))
     for sample in unique_samples:
-        taxon = sample.affected
-        nodes.append({'data': {'id': sample.id, 'annotation_Taxon': taxon }})
+        node_id = sample.id
+        graph.add_node(node_id, name=node_id, type=sample.affected)
     for cnv, cnv_id in unique_cnvs.items():
-        cnv_name = cnv.genes[0] 
-        cnv_alias = cnv.genes
-        cnv_taxon = 'CNV' + str(cnv.copynumber)
-        nodes.append({'data': {'id': str(cnv_id), 'name': cnv_name, 'alias': cnv_alias, 'annotation_Taxon': cnv_taxon, 'p': float(cnv.p), 'chi2': float(cnv.chi2)}})
-    with open(os.path.join(outdir, family + '.json'), "w") as outfile:
-        result = {'elements': {'nodes': nodes, 'edges': edges}}
-        outfile.write(json.dumps(result)) 
+        node_id = str(cnv_id)
+        node = graph.add_node(node_id, name=cnv.genes[0], genes=";".join(cnv.genes), type='CNV' + str(cnv.copynumber), p=float(cnv.p), chi2=float(cnv.chi2), penncnv_conf=float(cnv.penncnv_conf))
+    for source, target in unique_edges:
+        graph.add_edge(source, target)
+
+    outfilename = os.path.join(outdir, family + ".graphml")
+    nx.write_graphml(graph, outfilename, prettyprint=True, infer_numeric_types=True)
 
 
 def make_output_directory(directory_name):

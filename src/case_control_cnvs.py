@@ -110,7 +110,7 @@ def init_logging(log_filename):
         logging.info('command line: %s', ' '.join(sys.argv))
 
 
-CNV = namedtuple('CNV', ['chrom', 'start', 'end', 'copynumber', 'genes'])
+CNV = namedtuple('CNV', ['chrom', 'start', 'end', 'copynumber', 'genes', 'penncnv_conf'])
 
 
 def read_merged_cnvs(merged_cnvs_filename):
@@ -127,7 +127,8 @@ def read_merged_cnvs(merged_cnvs_filename):
             this_end = int(row['end'])
             this_copynumber = int(row['copy_number'])
             this_genes = tuple(row['genes'].split(';'))
-            this_cnv = CNV(this_chrom, this_start, this_end, this_copynumber, this_genes)
+            this_conf = float(row['penncnv_conf'])
+            this_cnv = CNV(this_chrom, this_start, this_end, this_copynumber, this_genes, this_conf)
             if this_chrom not in chroms:
                 chroms[this_chrom] = IntervalTree() 
             chroms[this_chrom].insert(this_start, this_end, this_cnv)
@@ -167,36 +168,6 @@ def read_all_cnvs(all_cnvs_filename):
             else:
                 duplicates.append(row)
         return header, duplicates, families, cases_controls
-
-
-
-def write_family_results(outdir, family_id, results):
-    cnv_id = 0
-    nodes = []
-    unique_samples = set()
-    unique_cnvs = {}
-    nodes = []
-    edges = []
-    for sample, cnv in results:
-        unique_samples.add(sample)
-        if cnv not in unique_cnvs:
-            unique_cnvs[cnv] = cnv_id
-            cnv_id += 1
-        edges.append({'data': {'source': sample.id, 'target': str(unique_cnvs[cnv])}})
-    for sample in unique_samples:
-        if sample.affected:
-            taxon = "CASE"
-        else:
-            taxon = "CONTROL"
-        nodes.append({'data': {'id': sample.id, 'annotation_Taxon': taxon }})
-    for cnv, cnv_id in unique_cnvs.items():
-        cnv_name = cnv.genes[0] 
-        cnv_alias = cnv.genes
-        cnv_taxon = 'CNV' + str(cnv.copynumber)
-        nodes.append({'data': {'id': str(cnv_id), 'name': cnv_name, 'alias': cnv_alias, 'annotation_Taxon': cnv_taxon}})
-    with open(os.path.join(outdir, family_id + '.json'), "w") as outfile:
-        result = {'elements': {'nodes': nodes, 'edges': edges}}
-        outfile.write(json.dumps(result)) 
 
 
 SAMPLE = namedtuple('SAMPLE', ['id', 'affected'])
@@ -241,12 +212,12 @@ def affected_str(is_affected):
 
 
 def write_family_intersections(cnv_significances):
-    header = '\t'.join(["chr", "start", "end", "family", "positive cases", "negative cases","postive controls","negative controls", "chi2", "p-value", "copynumber", "genes", "samples"])
+    header = '\t'.join(["chr", "start", "end", "family", "positive cases", "negative cases","postive controls","negative controls", "chi2", "p-value", "penncnv_conf", "copynumber", "genes", "samples"])
     print(header)
-    for family_id, pos_cases, neg_cases, pos_controls, neg_controls, chi2, p, chrom, start, end, copynumber, genes, samples in cnv_significances: 
+    for family_id, pos_cases, neg_cases, pos_controls, neg_controls, chi2, p, penncnv_conf, chrom, start, end, copynumber, genes, samples in cnv_significances: 
         gene_string = ";".join(genes)
         sample_string = "|".join([";".join([s.id, affected_str(s.affected)]) for s in samples])
-        print("\t".join([chrom, str(start), str(end), family_id, str(pos_cases), str(neg_cases), str(pos_controls), str(neg_controls), str(chi2), str(p), str(copynumber), gene_string, sample_string]))
+        print("\t".join([chrom, str(start), str(end), family_id, str(pos_cases), str(neg_cases), str(pos_controls), str(neg_controls), str(chi2), str(p), str(penncnv_conf), str(copynumber), gene_string, sample_string]))
 
 
 def get_significance(cases_controls, family_intersections):
@@ -265,7 +236,7 @@ def get_significance(cases_controls, family_intersections):
             except ValueError:
                 chi2 = 0.0
                 p = 1.0
-            this_result = [family_id, positive_cases, negative_cases, positive_controls, negative_controls, chi2, p, this_cnv.chrom, this_cnv.start, this_cnv.end, this_cnv.copynumber, this_cnv.genes, samples]
+            this_result = [family_id, positive_cases, negative_cases, positive_controls, negative_controls, chi2, p, this_cnv.penncnv_conf, this_cnv.chrom, this_cnv.start, this_cnv.end, this_cnv.copynumber, this_cnv.genes, samples]
             result.append(this_result)
     return result
 

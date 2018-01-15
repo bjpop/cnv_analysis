@@ -21,5 +21,5 @@ setup(
     license='LICENSE',
     description=('CNV analysis tools'),
     long_description=(LONG_DESCRIPTION),
-    install_requires=["networkx", "bx-python", "scipy"],
+    install_requires=["networkx", "bx-python", "scipy"]
 )

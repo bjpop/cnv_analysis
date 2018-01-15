@@ -96,7 +96,7 @@ def init_logging(log_filename):
         logging.info('command line: %s', ' '.join(sys.argv))
 
 
-CNV = namedtuple('CNV', ['chrom', 'start', 'end', 'copynumber', 'genes'])
+CNV = namedtuple('CNV', ['chrom', 'start', 'end', 'copynumber', 'genes', 'penncnv_conf'])
 
 
 def collect_cnvs(cnv_filename):
@@ -113,7 +113,8 @@ def collect_cnvs(cnv_filename):
             this_end = int(row['coord_end'])
             this_copynumber = int(row['copy_number'])
             this_genes = tuple(row['gene_symbols_in_cnv'].split(';'))
-            this_cnv = CNV(this_chrom, this_start, this_end, this_copynumber, this_genes)
+            this_conf = float(row['penncnv_conf'])
+            this_cnv = CNV(this_chrom, this_start, this_end, this_copynumber, this_genes, this_conf)
             if this_chrom not in chroms:
                 chroms[this_chrom] = set()
             chroms[this_chrom].add(this_cnv)
@@ -140,16 +141,23 @@ def merge_genes(gene_sets):
     return tuple(result) 
 
 
+def average_conf(confs):
+    if len(confs) == 0:
+        return 0.0
+    else:
+        return sum(confs) / len(confs)
+
 def merge_cnvs(cnvs):
     assert(len(cnvs) > 0)
     start = min([c.start for c in cnvs])
     end = max([c.end for c in cnvs])
     genes = merge_genes([c.genes for c in cnvs]) 
+    conf = average_conf([c.penncnv_conf for c in cnvs])
     for example_cnv in cnvs:
         break
     chrom = example_cnv.chrom
     copynumber = example_cnv.copynumber
-    return CNV(chrom, start, end, copynumber, genes)
+    return CNV(chrom, start, end, copynumber, genes, conf)
 
 
 def group_cnvs(family_cnvs, min_overlap):
@@ -168,14 +176,15 @@ def group_cnvs(family_cnvs, min_overlap):
                     yield((family, merged, component))
 
 
-OUTPUT_HEADER = "\t".join(['chr', 'start', 'end', 'family', 'copy_number', 'genes'])
+OUTPUT_HEADER = "\t".join(['chr', 'start', 'end', 'family', 'copy_number', 'genes', 'penncnv_conf'])
 
                 
 def group_and_print(family_cnvs, min_overlap):
     print(OUTPUT_HEADER)
     for family_id, cnv, component in group_cnvs(family_cnvs, min_overlap):
         gene_string = ';'.join(cnv.genes)
-        print("\t".join([cnv.chrom, str(cnv.start), str(cnv.end), family_id, str(cnv.copynumber), gene_string]))
+        print("\t".join([cnv.chrom, str(cnv.start), str(cnv.end), family_id,
+              str(cnv.copynumber), gene_string, str(cnv.penncnv_conf)]))
 
 
 def main():

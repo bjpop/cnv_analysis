@@ -37,7 +37,7 @@ merge_cnvs data_all.tsv > merged_cnvs_by_family.tsv
 
 Case-control analysis of all CNVs. Duplicates will be output to `data_all.dups.csv`.
 ```
-case_control_cnvs --merged merged_cnvs_by_family.tsv --all data_all.tsv
+case_control_cnvs --merged merged_cnvs_by_family.tsv --all data_all.tsv > case_control_by_family.tsv
 ```
 
 Generate graphs of CNV relations. Graphs can be explored using Cytoscape.
