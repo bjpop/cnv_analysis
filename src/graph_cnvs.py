@@ -19,7 +19,6 @@ import networkx as nx
 import csv
 from collections import namedtuple
 from itertools import combinations
-from bx.intervals.intersection import Interval, IntervalTree
 import json
 import os
 import networkx as nx

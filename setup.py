@@ -15,6 +15,7 @@ setup(
     entry_points={
         'console_scripts': ['merge_cnvs = cnv_analysis.merge_cnvs:main',
             'case_control_cnvs = cnv_analysis.case_control_cnvs:main',
+            'intersect_cnvs = cnv_analysis.intersect_cnvs:main',
             'graph_cnvs = cnv_analysis.graph_cnvs:main']
     },
     url='https://github.com/bjpop/cnv_analysis',
