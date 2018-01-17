@@ -140,7 +140,11 @@ def write_family_results(outdir, family, cnvs):
             unique_edges.add((sample.id, str(unique_cnvs[this_cnv])))
     for sample in unique_samples:
         node_id = sample.id
-        graph.add_node(node_id, name=node_id, type=sample.affected)
+        if sample.affected == "CASE":
+            this_name = "+"
+        else:
+            this_name = "-"
+        graph.add_node(node_id, name=this_name, type=sample.affected)
     for cnv, cnv_id in unique_cnvs.items():
         node_id = str(cnv_id)
         node = graph.add_node(node_id, name=cnv.genes[0], genes=";".join(cnv.genes), type='CNV' + str(cnv.copynumber), p=float(cnv.p), chi2=float(cnv.chi2), penncnv_conf=float(cnv.penncnv_conf))
