@@ -24,6 +24,7 @@ EXIT_FILE_IO_ERROR = 1
 EXIT_COMMAND_LINE_ERROR = 2
 PROGRAM_NAME = "merge_cnvs"
 DEFAULT_OVERLAP = 0.7
+DEFAULT_CONF = 0.0
 
 
 try:
@@ -60,6 +61,12 @@ def parse_args():
         default=DEFAULT_OVERLAP,
         help='CNV overlap requirement for equality (default {})'.format(
             DEFAULT_OVERLAP))
+    parser.add_argument(
+        '--conf',
+        metavar='N',
+        type=float,
+        default=DEFAULT_CONF,
+        help='PennCNV confidence threshold (default {})'.format(DEFAULT_CONF))
     parser.add_argument('--version',
                         action='version',
                         version='%(prog)s ' + PROGRAM_VERSION)
@@ -99,7 +106,7 @@ def init_logging(log_filename):
 CNV = namedtuple('CNV', ['chrom', 'start', 'end', 'copynumber', 'genes', 'penncnv_conf'])
 
 
-def collect_cnvs(cnv_filename):
+def collect_cnvs(cnv_filename, confidence_threshold):
     families = {}
     with open(cnv_filename) as file:
         reader = csv.DictReader(file, delimiter='\t')
@@ -114,10 +121,11 @@ def collect_cnvs(cnv_filename):
             this_copynumber = int(row['copy_number'])
             this_genes = tuple(row['gene_symbols_in_cnv'].split(';'))
             this_conf = float(row['penncnv_conf'])
-            this_cnv = CNV(this_chrom, this_start, this_end, this_copynumber, this_genes, this_conf)
-            if this_chrom not in chroms:
-                chroms[this_chrom] = set()
-            chroms[this_chrom].add(this_cnv)
+            if this_conf >= confidence_threshold:
+                this_cnv = CNV(this_chrom, this_start, this_end, this_copynumber, this_genes, this_conf)
+                if this_chrom not in chroms:
+                    chroms[this_chrom] = set()
+                chroms[this_chrom].add(this_cnv)
     return families 
 
 
@@ -191,7 +199,7 @@ def main():
     "Orchestrate the execution of the program"
     options = parse_args()
     init_logging(options.log)
-    family_cnvs = collect_cnvs(options.cnv_file)
+    family_cnvs = collect_cnvs(options.cnv_file, options.conf)
     group_and_print(family_cnvs, options.overlap)
 
 

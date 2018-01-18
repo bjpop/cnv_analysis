@@ -179,17 +179,19 @@ def intersect_cnvs(merged_cnvs, all_cnvs):
         if family_id not in result:
             result[family_id] = {}
         this_family_result = result[family_id]
-        this_merged_cnvs = merged_cnvs[family_id]
-        for this_cnv in this_family_cnvs:
-            this_affected = this_cnv['ped_Affected'] == "Yes"
-            this_sample = SAMPLE(this_cnv['sample_id'], this_affected)
-            this_chrom = this_cnv['chr']
-            this_interval_tree = this_merged_cnvs[this_chrom]
-            this_intersection = this_interval_tree.find(int(this_cnv['coord_start']), int(this_cnv['coord_end']))
-            for intersecting_cnv in this_intersection:
-                if intersecting_cnv not in this_family_result:
-                    this_family_result[intersecting_cnv] = set()
-                this_family_result[intersecting_cnv].add(this_sample)
+        if family_id in merged_cnvs:
+            this_merged_cnvs = merged_cnvs[family_id]
+            for this_cnv in this_family_cnvs:
+                this_affected = this_cnv['ped_Affected'] == "Yes"
+                this_sample = SAMPLE(this_cnv['sample_id'], this_affected)
+                this_chrom = this_cnv['chr']
+                if this_chrom in this_merged_cnvs:
+                    this_interval_tree = this_merged_cnvs[this_chrom]
+                    this_intersection = this_interval_tree.find(int(this_cnv['coord_start']), int(this_cnv['coord_end']))
+                    for intersecting_cnv in this_intersection:
+                        if intersecting_cnv not in this_family_result:
+                            this_family_result[intersecting_cnv] = set()
+                        this_family_result[intersecting_cnv].add(this_sample)
     return result
 
 

@@ -29,10 +29,9 @@ cnv_analysis can be installed using `pip` in a variety of ways (`%` indicates th
 
 Assuming all cnv data is in the file `data_all.tsv`
 
-Merge all CNVs per family:
+Merge all CNVs per family (PennCNV confidence threshold = 100):
 ```
-merge_cnvs data_all.tsv > merged_cnvs_by_family.tsv
-
+merge_cnvs --conf 100 data_all.tsv > merged_cnvs_by_family.tsv
 ``` 
 
 Case-control analysis of all CNVs. Duplicates will be output to `data_all.dups.csv`.
