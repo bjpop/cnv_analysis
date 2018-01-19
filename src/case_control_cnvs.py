@@ -85,6 +85,10 @@ def parse_args():
                         metavar='ALL_CNV_FILE',
                         type=str,
                         help='Input all CNV file containing all CNVs in all families')
+    parser.add_argument('--pool',
+                        action="store_true",
+                        default=False,
+                        help='Ignore family information in the analysis and pool all samples together')
     return parser.parse_args()
 
 
@@ -113,12 +117,15 @@ def init_logging(log_filename):
 CNV = namedtuple('CNV', ['chrom', 'start', 'end', 'copynumber', 'genes', 'penncnv_conf'])
 
 
-def read_merged_cnvs(merged_cnvs_filename):
+def read_merged_cnvs(pool, merged_cnvs_filename):
     families = {}
     with open(merged_cnvs_filename) as file:
         reader = csv.DictReader(file, delimiter='\t')
         for row in reader:
-            this_family = row['family']
+            if pool:
+                this_family = "EVERYONE"
+            else:
+                this_family = row['family']
             if this_family not in families:
                 families[this_family] = {}
             chroms = families[this_family]
@@ -140,7 +147,7 @@ class CasesControls(object):
         self.cases = set()
         self.controls = set()
 
-def read_all_cnvs(all_cnvs_filename):
+def read_all_cnvs(all_cnvs_filename, pool=False):
     families = {}
     seen_samples = {} 
     duplicates = []
@@ -149,7 +156,10 @@ def read_all_cnvs(all_cnvs_filename):
         reader = csv.DictReader(file, delimiter='\t')
         header = reader.fieldnames 
         for row in reader:
-            this_family = row['master_sample_sheet_FAMILY_ID']
+            if pool:
+                this_family = "EVERYONE"
+            else:
+                this_family = row['master_sample_sheet_FAMILY_ID']
             this_sample_id = row['sample_id']
             if this_family not in cases_controls:
                 cases_controls[this_family] = CasesControls()
@@ -247,8 +257,8 @@ def main():
     "Orchestrate the execution of the program"
     options = parse_args()
     init_logging(options.log)
-    merged_cnvs = read_merged_cnvs(options.merged)
-    header, duplicates, families, cases_controls = read_all_cnvs(options.all)
+    merged_cnvs = read_merged_cnvs(options.pool, options.merged)
+    header, duplicates, families, cases_controls = read_all_cnvs(options.all, options.pool)
     write_duplicates(header, duplicates, options.all)
     family_intersections = intersect_cnvs(merged_cnvs, families)
     cnv_significances = get_significance(cases_controls, family_intersections)
