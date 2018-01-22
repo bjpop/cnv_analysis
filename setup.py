@@ -7,7 +7,7 @@ LONG_DESCRIPTION = \
 
 setup(
     name='cnv_analysis',
-    version='0.1.0.0',
+    version='0.2.0.0',
     author='Bernie Pope',
     author_email='bjpope@unimelb.edu.au',
     packages=['cnv_analysis'],

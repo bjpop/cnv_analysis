@@ -62,6 +62,16 @@ def parse_args():
         help='CNV overlap requirement for equality (default {})'.format(
             DEFAULT_OVERLAP))
     parser.add_argument(
+        '--stringent',
+        action='store_true',
+        default=False,
+        help='Use stringent CNV overlap rule (both intervals in a pair must overlap by a certain percent)')
+    parser.add_argument(
+        '--pool',
+        action='store_true',
+        default=False,
+        help='Pool all families together')
+    parser.add_argument(
         '--conf',
         metavar='N',
         type=float,
@@ -106,12 +116,15 @@ def init_logging(log_filename):
 CNV = namedtuple('CNV', ['chrom', 'start', 'end', 'copynumber', 'genes', 'penncnv_conf'])
 
 
-def collect_cnvs(cnv_filename, confidence_threshold):
+def collect_cnvs(pool, cnv_filename, confidence_threshold):
     families = {}
     with open(cnv_filename) as file:
         reader = csv.DictReader(file, delimiter='\t')
         for row in reader:
-            this_family = row['master_sample_sheet_FAMILY_ID']
+            if pool: 
+                this_family = "EVERYONE"
+            else:
+                this_family = row['master_sample_sheet_FAMILY_ID']
             if this_family not in families:
                 families[this_family] = {}
             chroms = families[this_family]
@@ -129,7 +142,7 @@ def collect_cnvs(cnv_filename, confidence_threshold):
     return families 
 
 
-def overlap(cnv1, cnv2, min_overlap):
+def overlap(stringent_overlap, cnv1, cnv2, min_overlap):
     overlap_start = max(cnv1.start, cnv2.start)
     overlap_end = min(cnv1.end, cnv2.end)
     if overlap_start < overlap_end:
@@ -138,7 +151,10 @@ def overlap(cnv1, cnv2, min_overlap):
         cnv2_size = (cnv2.end - cnv2.start) + 1
         cnv1_overlap = overlap_size / cnv1_size
         cnv2_overlap = overlap_size / cnv2_size
-        return cnv1_overlap >= min_overlap or cnv2_overlap >= min_overlap
+        if stringent_overlap:
+            return cnv1_overlap >= min_overlap and cnv2_overlap >= min_overlap
+        else:
+            return cnv1_overlap >= min_overlap or cnv2_overlap >= min_overlap
     return False
 
 
@@ -168,7 +184,7 @@ def merge_cnvs(cnvs):
     return CNV(chrom, start, end, copynumber, genes, conf)
 
 
-def group_cnvs(family_cnvs, min_overlap):
+def group_cnvs(family_cnvs, min_overlap, stringent_overlap):
     for family in family_cnvs:
         chroms = family_cnvs[family]
         for chrom in chroms:
@@ -176,7 +192,7 @@ def group_cnvs(family_cnvs, min_overlap):
             overlap_graph = nx.Graph()
             overlap_graph.add_nodes_from(chrom_cnvs)
             for cnv1, cnv2 in combinations(chrom_cnvs, 2):
-                if cnv1.copynumber == cnv2.copynumber and overlap(cnv1, cnv2, min_overlap):
+                if cnv1.copynumber == cnv2.copynumber and overlap(stringent_overlap, cnv1, cnv2, min_overlap):
                     overlap_graph.add_edge(cnv1, cnv2)
             for component in nx.connected_components(overlap_graph):
                 if len(component) > 0:
@@ -187,9 +203,9 @@ def group_cnvs(family_cnvs, min_overlap):
 OUTPUT_HEADER = "\t".join(['chr', 'start', 'end', 'family', 'copy_number', 'genes', 'penncnv_conf'])
 
                 
-def group_and_print(family_cnvs, min_overlap):
+def group_and_print(family_cnvs, min_overlap, stringent_overlap):
     print(OUTPUT_HEADER)
-    for family_id, cnv, component in group_cnvs(family_cnvs, min_overlap):
+    for family_id, cnv, component in group_cnvs(family_cnvs, min_overlap, stringent_overlap):
         gene_string = ';'.join(cnv.genes)
         print("\t".join([cnv.chrom, str(cnv.start), str(cnv.end), family_id,
               str(cnv.copynumber), gene_string, str(cnv.penncnv_conf)]))
@@ -199,8 +215,8 @@ def main():
     "Orchestrate the execution of the program"
     options = parse_args()
     init_logging(options.log)
-    family_cnvs = collect_cnvs(options.cnv_file, options.conf)
-    group_and_print(family_cnvs, options.overlap)
+    family_cnvs = collect_cnvs(options.pool, options.cnv_file, options.conf)
+    group_and_print(family_cnvs, options.overlap, options.stringent)
 
 
 # If this script is run from the command line then call the main function.
